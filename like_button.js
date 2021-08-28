@@ -56,6 +56,22 @@ class Game extends React.Component {
     };
   }
 
+  componentDidMount() {
+    fetch("/sabiranje?a=3&b=2")
+      .then(res => res.text())
+      .then(
+        (result) => {
+          console.log(result);
+        },
+        // Note: it's important to handle errors here
+        // instead of a catch() block so that we don't swallow
+        // exceptions from actual bugs in components.
+        (error) => {
+          console.log(error);
+        }
+      )
+  }
+
   handleClick(i){
     const history = this.state.history.slice(0, this.state.stepNumber + 1);
     const current = history[history.length-1];
@@ -83,6 +99,7 @@ class Game extends React.Component {
   }
 
   render() {
+
     const history = this.state.history;
     const current = history[this.state.stepNumber];
     const winner=calculateWinner(current.squares);
@@ -92,7 +109,7 @@ class Game extends React.Component {
         'Go to move #' + move :
         'Go to game start';
       return (
-        <li>
+        <li key={move}>
           <button onClick={() => this.jumpTo(move)}>{desc}</button>
         </li>
       );
@@ -117,6 +134,7 @@ class Game extends React.Component {
           <div>{status}</div>
           <ol>{moves}</ol>
         </div>
+        <Ulaz/>
       </div>
     );
   }
@@ -138,6 +156,35 @@ function calculateWinner(squares) {
     if(squares[a] && squares[a]===squares[b] && squares[a]===squares[c]) return squares[a];
   }
   return null;
+}
+
+class Ulaz extends React.Component{
+  constructor(props){
+    super(props);
+    this.state={
+      stanje: "nepoznato",
+    };
+  }
+  render(){
+    return(
+      <div>
+        <input type="text" name="tekst" id="tekst"/>
+        <input type="button" value="Unesi" onClick={()=>{
+          const requestOptions = {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ tekst: document.getElementById("tekst").value })
+          };
+          fetch('/api/novizapis', requestOptions)
+            .then(response => response.json())
+            .then(data => this.setState({stanje : data.stanje}),error => console.log(error));
+          
+        }}/>
+        <br/>
+        <p>{this.state.stanje}</p>
+      </div>
+    );
+  }
 }
 
 // ========================================
