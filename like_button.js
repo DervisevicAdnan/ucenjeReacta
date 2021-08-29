@@ -135,6 +135,7 @@ class Game extends React.Component {
           <ol>{moves}</ol>
         </div>
         <Ulaz/>
+        <ToDo/>
       </div>
     );
   }
@@ -182,6 +183,64 @@ class Ulaz extends React.Component{
         }}/>
         <br/>
         <p>{this.state.stanje}</p>
+      </div>
+    );
+  }
+}
+
+class ToDo extends React.Component{
+  constructor(props){
+    super(props);
+    this.state={
+      zad:[],
+    };
+  }
+
+  componentDidMount() {
+    console.log(this.state.zad);
+    fetch("/api/to-do")
+      .then(response => response.json())
+      .then(data => {this.setState({zad : data});console.log(data);},error => console.log(error));
+  }
+
+  render(){
+    const zadaci=this.state.zad.map(el => {
+      return(
+        <li key={el["id"]} className="lista" onClick={() => {
+          const requestOptions = {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ izbaciZadatak: el["id"] })
+          };
+          fetch('/api/izbaci-zadatak', requestOptions)
+            .then(response => response.json())
+            .then(data => this.setState({zad : data}),error => console.log(error));
+
+        }}>
+          {el["tekst"]}
+        </li>
+      );
+    });
+
+    return(
+      <div>
+        <ul>
+          {zadaci}
+        </ul>
+        <br/>
+        <input type="text" name="noviZadatak" id="noviZadatak"/>
+        <input type="button" value="Dodaj novi zadatak" onClick={() => {
+          const requestOptions = {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ noviZadatak: document.getElementById("noviZadatak").value })
+          };
+          fetch('/api/novi-zadatak', requestOptions)
+            .then(response => response.json())
+            .then(data => this.setState({zad : data}),error => console.log(error));
+
+          document.getElementById("noviZadatak").value="";
+        }}/>
       </div>
     );
   }
