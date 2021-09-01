@@ -1,12 +1,20 @@
 import http.server
 import socketserver
 import json
+import threading
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 
 class MojHandler(http.server.SimpleHTTPRequestHandler):
 	zadaci=[]
 	sljedeciZadatak=0
+	brava = threading.Lock()
+
+	def createId(self):
+		with MojHandler.brava:
+			nova=MojHandler.sljedeciZadatak
+			MojHandler.sljedeciZadatak+=1
+			return nova
 
 	def end_headers(self):
 		self.send_my_headers()
@@ -58,8 +66,7 @@ class MojHandler(http.server.SimpleHTTPRequestHandler):
 		if self.path.startswith("/api/novi-zadatak"):
 			length = int(self.headers.get('content-length'))
 			rfile_str = json.loads(self.rfile.read(length).decode('utf8'))
-			MojHandler.zadaci.append({"id":MojHandler.sljedeciZadatak,"tekst":rfile_str["noviZadatak"]})
-			MojHandler.sljedeciZadatak=MojHandler.sljedeciZadatak+1;
+			MojHandler.zadaci.append({"id":self.createId(),"tekst":rfile_str["noviZadatak"]})
 			data=json.dumps(MojHandler.zadaci)
 			self.send_response(200)
 			self.send_header('Content-Type', 'application/json')

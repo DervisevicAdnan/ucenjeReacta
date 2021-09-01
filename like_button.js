@@ -197,7 +197,12 @@ class ToDo extends React.Component{
   }
 
   componentDidMount() {
-    console.log(this.state.zad);
+    var eventSource = new EventSource("/stream");
+    eventSource.onmessage = (e) => {
+      fetch("/api/to-do")
+      .then(response => response.json())
+      .then(data => {this.setState({zad : data});console.log(data);},error => console.log(error));
+    };
     fetch("/api/to-do")
       .then(response => response.json())
       .then(data => {this.setState({zad : data});console.log(data);},error => console.log(error));
