@@ -1,29 +1,23 @@
 from flask import Flask,redirect,request,jsonify,Response
 import threading
 import time
-from flask_socketio import SocketIO, emit
-from flask_login import current_user
 
 app = Flask(__name__,static_url_path='', static_folder='.')
-socketio = SocketIO(app)
 
 zadaci=[]
 sljedeciZadatak=0
 uslov=threading.Condition()
-socketio = SocketIO(app)
+squares=[]
+history=[]
+step=0;
 
-if __name__ == '__main__':
-	socketio.run(app)
+for i in range(0,9):
+	squares.append(None)
 
-@socketio.on('connect')
-def connect_handler():
-	print("aijfsdfajsfsdfj")
-	if current_user.is_authenticated:
-		return('my response',
-			 {'message': '{0} has joined'.format(current_user.name)},
-			 broadcast=True)
-	else:
-		return False  # not allowed here
+history.append({"squares":squares})
+print(history)
+
+brojKlijenata=0
 
 
 def get_message():
@@ -68,8 +62,65 @@ def izbaciZadatak():
 
 @app.route('/stream')
 def stream():
+	global brojKlijenata
+	print("spojio se klijent",brojKlijenata)
+	brojKlijenata+=1
 	def eventStream():
 		while True:
 			# wait for source data to be available, then push it
 			yield 'data: {}\n\n'.format(get_message())
 	return Response(eventStream(), mimetype="text/event-stream")
+
+
+@app.route("/api/ticTacToe")
+def ticTacToe():
+	global history
+	global step
+	return jsonify({"history":history,"step":step})
+
+@app.route("/api/ticTacToeStep")
+def ticTacToeStep():
+	
+	print(step)
+	return jsonify(step)
+
+@app.route("/api/noviKorak", methods=["POST"])
+def dodajNoviKorak():
+	global squares
+	global step
+	global history
+	square=[]
+	step+=1
+	print(history)
+	square=request.json["noviKorak"]
+	history.append({"squares":square})
+	print(history)
+	with uslov:
+		uslov.notify_all()
+	return jsonify(history)
+
+@app.route('/stream/ticTacToe')
+def streamTicTacToe():
+	def eventStream1():
+		while True:
+			# wait for source data to be available, then push it
+			yield 'data: {}\n\n'.format(get_message())
+	return Response(eventStream1(), mimetype="text/event-stream")
+
+
+@app.route("/api/ticTacToeSetStep", methods=["POST"])
+def setStep():
+	global step
+	step=request.json["setStep"]
+	del history[step+1:]
+	with uslov:
+		uslov.notify_all()
+	return jsonify(step)
+
+@app.route("/api/proba", methods=["POST"])
+def proba():
+	print("probaaaa")
+	print(request.json["proba"])
+	#with uslov:
+	#	uslov.notify_all()
+	return jsonify(history)
